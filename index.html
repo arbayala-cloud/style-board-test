@@ -11,12 +11,13 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 #items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
 </style></head><body>
 <header>Style Board<small>prototype</small></header>
+<label id="upl" style="display:block;margin:10px 12px 2px;padding:16px;text-align:center;border-radius:14px;background:#c96f5b;color:#fff;font:bold 18px sans-serif;box-shadow:0 2px 6px #0003">Upload from Phone<input type="file" accept="image/*" id="file" hidden multiple></label>
+<div id="offer" hidden style="margin:6px 12px;padding:8px 10px;border-radius:12px;background:#fff;font:14px sans-serif;display:flex;gap:8px;align-items:center"><span style="flex:1">Remove the photo background?</span><button id="ofy" style="border:0;border-radius:14px;padding:7px 12px;background:#3b2f2f;color:#fff">Remove</button><button id="ofn" style="border:0;border-radius:14px;padding:7px 12px">No thanks</button></div>
 <div class="bar" id="items"></div>
 <div class="bar"><input id="link" placeholder="Paste image or Pinterest link" style="flex:1;min-width:0;border:0;border-radius:18px;padding:9px 12px;font:14px sans-serif"><button class="main" id="go">Add</button><button id="pst">Paste</button></div>
 <div id="msg" style="font:13px sans-serif;padding:0 12px;min-height:16px;color:#7a3e33"></div>
 <div id="wrap"><canvas id="c" width="1080" height="1350"></canvas></div>
 <div class="bar">
-<label class="main">+ Photo<input type="file" accept="image/*" id="file" hidden multiple></label>
 <button id="fw">Forward</button><button id="bk">Back</button>
 <button id="rl">Rotate -</button><button id="rr">Rotate +</button>
 <button id="up">Bigger</button><button id="dn">Smaller</button>
@@ -49,8 +50,11 @@ $('rl').onclick=()=>{if(sel){sel.a-=.2;draw()}};$('rr').onclick=()=>{if(sel){sel
 $('up').onclick=()=>{if(sel){sel.w*=1.1;sel.h*=1.1;draw()}};$('dn').onclick=()=>{if(sel){sel.w/=1.1;sel.h/=1.1;draw()}};
 $('del').onclick=()=>{items=items.filter(o=>o!==sel);sel=null;draw()};
 $('bg').oninput=e=>{bg=e.target.value;draw()};
-$('file').onchange=e=>{for(const f of e.target.files){const r=new FileReader();r.onload=()=>add(r.result,420);r.readAsDataURL(f)}};
+$('file').onchange=e=>{addUploads([...e.target.files]);e.target.value=''};
 $('save').onclick=()=>{x.noSel=1;draw();const a=document.createElement('a');a.download='style-board.png';a.href=c.toDataURL('image/png');a.click();x.noSel=0;draw()};
+function shrink(b){return new Promise(ok=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>{const s=Math.min(1,1200/Math.max(i.width,i.height)),k=document.createElement('canvas');k.width=Math.round(i.width*s);k.height=Math.round(i.height*s);k.getContext('2d').drawImage(i,0,0,k.width,k.height);URL.revokeObjectURL(u);ok(k.toDataURL('image/jpeg',.9))};i.onerror=()=>ok(null);i.src=u})}
+let pending=[];function offer(){$('offer').hidden=!pending.length;$('offer').style.display=pending.length?'flex':'none'}
+async function addUploads(fs){let n=0;for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});pending.push(sel);n++;draw();r()};im.src=d})}offer();if(!n&&fs.length)msg("Couldn't read that photo.")}
 const msg=t=>$('msg').textContent=t;
 const PX=u=>'https://images.weserv.nl/?url='+encodeURIComponent(u.replace(/^https?:\/\//,''));
 function addUrl(u){return new Promise((ok,no)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const w=380;items.push(sel={im,x:540,y:600,w,h:w*im.height/im.width,a:0});draw();ok()};im.onerror=no;im.src=PX(u)})}
@@ -62,15 +66,17 @@ async function addLink(raw){const u=(raw.match(/https?:\/\/\S+/)||[])[0];if(!u)r
  const img=await og(u);if(img){try{await addUrl(img);return msg('')}catch(e){}}
  try{await addUrl(u);msg('')}catch(e){msg('Couldn\'t grab that picture. Try long-pressing the image, choose "Open image in new tab" or "Copy image", then paste that.')}}
 $('go').onclick=()=>{addLink($('link').value);$('link').value=''};
-function addBlob(b){const r=new FileReader();r.onload=()=>add(r.result,420);r.readAsDataURL(b)}
+function addBlob(b){addUploads([b])}
 document.addEventListener('paste',e=>{const f=[...e.clipboardData.items].find(i=>i.type.startsWith('image/'));if(f){e.preventDefault();addBlob(f.getAsFile())}else if(e.target!==$('link')){const t=e.clipboardData.getData('text');if(t)addLink(t)}});
 $('pst').onclick=async()=>{try{for(const it of await navigator.clipboard.read()){const t=it.types.find(t=>t.startsWith('image/'));if(t)return addBlob(await it.getType(t));if(it.types.includes('text/plain'))return addLink(await(await it.getType('text/plain')).text())}msg('Clipboard is empty.')}catch(e){msg('Phone blocked clipboard access. Long-press the link box and tap Paste instead.')}};
 function toImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src})}
 function whiteOut(im){const k=document.createElement('canvas');k.width=im.naturalWidth;k.height=im.naturalHeight;const q=k.getContext('2d');q.drawImage(im,0,0);const d=q.getImageData(0,0,k.width,k.height),a=d.data;for(let i=0;i<a.length;i+=4){const m=Math.min(a[i],a[i+1],a[i+2]);if(m>235)a[i+3]=0;else if(m>215)a[i+3]=(235-m)*12}q.putImageData(d,0,0);return k.toDataURL()}
-let bgLib=null;$('rb').onclick=async()=>{if(!sel)return msg('Tap an item first.');const o=sel;msg('Removing background (first time downloads ~40MB)...');
+let bgLib=null;async function rmbg(o){msg('Removing background (first time downloads ~40MB)...');
  try{bgLib=bgLib||await import('https://esm.sh/@imgly/background-removal@1.4.5');const k=document.createElement('canvas');k.width=o.im.naturalWidth;k.height=o.im.naturalHeight;k.getContext('2d').drawImage(o.im,0,0);
   const blob=await new Promise(r=>k.toBlob(r));const out=await bgLib.removeBackground(blob);o.im=await toImg(URL.createObjectURL(out));msg('')}
- catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));msg('Smart removal unavailable; cleared white background instead.')}draw()};
+ catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));msg('Smart removal unavailable; cleared white background instead.')}draw()}
+$('rb').onclick=()=>sel?rmbg(sel):msg('Tap an item first.');
+$('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)await rmbg(o)};$('ofn').onclick=()=>{pending=[];offer()};
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 (async()=>{const q=new URLSearchParams(location.search);if(!q.has('shared'))return;history.replaceState(0,'','./');const n=+q.get('shared');

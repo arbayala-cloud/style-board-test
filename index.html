@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>Style Board (test)</title>
+<style>
+body{margin:0;font-family:Georgia,serif;background:#f6efe8;color:#3b2f2f;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{padding:10px 14px;font-size:20px;letter-spacing:1px;background:#3b2f2f;color:#f6d9c8}
+header small{font-family:sans-serif;font-size:11px;opacity:.7;margin-left:6px}
+#wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:8px}
+canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-action:none;max-width:100%;max-height:100%}
+.bar{display:flex;gap:6px;overflow-x:auto;padding:8px;background:#efe2d6}
+.bar button,.bar label{flex:none;border:0;border-radius:18px;padding:9px 13px;background:#fff;color:#3b2f2f;font:14px sans-serif;box-shadow:0 1px 3px #0002}
+.bar .main{background:#c96f5b;color:#fff}
+#items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
+</style></head><body>
+<header>Style Board<small>prototype</small></header>
+<div class="bar" id="items"></div>
+<div id="wrap"><canvas id="c" width="1080" height="1350"></canvas></div>
+<div class="bar">
+<label class="main">+ Photo<input type="file" accept="image/*" id="file" hidden multiple></label>
+<button id="fw">Forward</button><button id="bk">Back</button>
+<button id="rl">Rotate -</button><button id="rr">Rotate +</button>
+<button id="up">Bigger</button><button id="dn">Smaller</button>
+<button id="del">Delete</button>
+<label>Background <input type="color" id="bg" value="#ffffff"></label>
+<button class="main" id="save">Save PNG</button></div>
+<script>
+const S=(b)=>'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'+b+'</svg>');
+const samples=[
+S('<path d="M70 30 Q100 50 130 30 L175 55 L160 90 L140 80 L140 175 L60 175 L60 80 L40 90 L25 55 Z" fill="#d98c7a" stroke="#7a3e33" stroke-width="4"/><path d="M80 32 Q100 70 120 32" fill="none" stroke="#7a3e33" stroke-width="3"/>'),
+S('<path d="M65 20 L135 20 L140 60 L170 180 L30 180 L60 60 Z" fill="#2f4858" stroke="#1b2a33" stroke-width="4"/><path d="M60 60 L140 60" stroke="#c9a96e" stroke-width="5"/>'),
+S('<path d="M30 120 Q30 95 60 100 L120 110 Q150 70 165 95 L175 140 L30 140 Z" fill="#b5384a" stroke="#5e1b25" stroke-width="4"/><path d="M160 140 L165 175 L172 175 L175 140" fill="#5e1b25"/>'),
+S('<path d="M60 70 Q60 30 100 30 Q140 30 140 70" fill="none" stroke="#7a5230" stroke-width="8"/><rect x="35" y="70" width="130" height="100" rx="18" fill="#c08a5a" stroke="#7a5230" stroke-width="4"/><circle cx="100" cy="110" r="8" fill="#e8c66a"/>'),
+S('<circle cx="70" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><circle cx="135" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><path d="M104 96 Q102 88 100 96" stroke="#c9a96e" stroke-width="5" fill="none"/><path d="M36 92 L15 80 M169 92 L188 80" stroke="#c9a96e" stroke-width="5"/>'),
+S('<path d="M100 40 Q60 40 60 90 Q60 150 100 175 Q140 150 140 90 Q140 40 100 40Z" fill="#e8c66a" stroke="#9a7a2e" stroke-width="4"/><circle cx="100" cy="95" r="18" fill="#7fb7a4"/>')];
+const c=document.getElementById('c'),x=c.getContext('2d');let items=[],sel=null,bg='#ffffff';
+function add(src,w=380){const im=new Image();im.onload=()=>{const r=im.height/im.width;items.push(sel={im,x:540,y:600,w,h:w*r,a:0});draw()};im.src=src}
+const bar=document.getElementById('items');samples.forEach(s=>{const i=new Image();i.src=s;i.onclick=()=>add(s);bar.appendChild(i)});
+function draw(){x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);for(const o of items){x.save();x.translate(o.x,o.y);x.rotate(o.a);x.drawImage(o.im,-o.w/2,-o.h/2,o.w,o.h);if(o===sel&&!x.noSel){x.strokeStyle='#c96f5b';x.lineWidth=4;x.setLineDash([14,10]);x.strokeRect(-o.w/2,-o.h/2,o.w,o.h)}x.restore()}}
+function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+function hit(p){for(let i=items.length-1;i>=0;i--){const o=items[i],dx=p.x-o.x,dy=p.y-o.y,cs=Math.cos(-o.a),sn=Math.sin(-o.a),lx=dx*cs-dy*sn,ly=dx*sn+dy*cs;if(Math.abs(lx)<o.w/2&&Math.abs(ly)<o.h/2)return o}return null}
+const ptrs=new Map();let g=null;
+c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,pt(e));if(ptrs.size==1){sel=hit(pt(e));draw()}start()};
+function start(){g=null;if(!sel||!ptrs.size)return;const p=[...ptrs.values()];if(p.length==1)g={p:p[0],x:sel.x,y:sel.y};else{const d=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y),an=Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x);g={d,an,w:sel.w,h:sel.h,a:sel.a}}}
+c.onpointermove=e=>{if(!ptrs.has(e.pointerId)||!sel||!g)return;ptrs.set(e.pointerId,pt(e));const p=[...ptrs.values()];if(p.length==1&&g.p){sel.x=g.x+p[0].x-g.p.x;sel.y=g.y+p[0].y-g.p.y}else if(p.length>1&&g.d){const s=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)/g.d;sel.w=g.w*s;sel.h=g.h*s;sel.a=g.a+Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x)-g.an}draw()};
+c.onpointerup=c.onpointercancel=e=>{ptrs.delete(e.pointerId);start()};
+const $=id=>document.getElementById(id),mv=d=>{if(!sel)return;const i=items.indexOf(sel);const j=Math.max(0,Math.min(items.length-1,i+d));items.splice(i,1);items.splice(j,0,sel);draw()};
+$('fw').onclick=()=>mv(1);$('bk').onclick=()=>mv(-1);
+$('rl').onclick=()=>{if(sel){sel.a-=.2;draw()}};$('rr').onclick=()=>{if(sel){sel.a+=.2;draw()}};
+$('up').onclick=()=>{if(sel){sel.w*=1.1;sel.h*=1.1;draw()}};$('dn').onclick=()=>{if(sel){sel.w/=1.1;sel.h/=1.1;draw()}};
+$('del').onclick=()=>{items=items.filter(o=>o!==sel);sel=null;draw()};
+$('bg').oninput=e=>{bg=e.target.value;draw()};
+$('file').onchange=e=>{for(const f of e.target.files){const r=new FileReader();r.onload=()=>add(r.result,420);r.readAsDataURL(f)}};
+$('save').onclick=()=>{x.noSel=1;draw();const a=document.createElement('a');a.download='style-board.png';a.href=c.toDataURL('image/png');a.click();x.noSel=0;draw()};
+draw();
+</script></body></html>

@@ -1,0 +1,110 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#3b2f2f"><link rel="apple-touch-icon" href="../icon-192.png"><title>Style Board (test)</title>
+<style>
+body{margin:0;font-family:Georgia,serif;background:#f6efe8;color:#3b2f2f;}
+header{padding:10px 14px;font-size:20px;letter-spacing:1px;background:#3b2f2f;color:#f6d9c8}
+header small{font-family:sans-serif;font-size:11px;opacity:.7;margin-left:6px}
+#wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:8px}
+#wrap canvas{max-height:62vh}
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 10px}.tools button,.tools label{border:0;border-radius:12px;padding:12px 4px;background:#fff;color:#3b2f2f;font:14px sans-serif;box-shadow:0 1px 3px #0002;text-align:center}.tools .main{background:#c96f5b;color:#fff}.tools .wand{grid-column:span 3;background:#3b2f2f;color:#f6d9c8;font-size:16px}#tools.off button{opacity:.45}
+canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-action:none;max-width:100%;max-height:100%}
+.bar{display:flex;gap:6px;overflow-x:auto;padding:8px;background:#efe2d6}
+.bar button,.bar label{flex:none;border:0;border-radius:18px;padding:9px 13px;background:#fff;color:#3b2f2f;font:14px sans-serif;box-shadow:0 1px 3px #0002}
+.bar .main{background:#c96f5b;color:#fff}
+#items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
+</style></head><body>
+<header>Style Board<small>prototype v7</small></header>
+<label id="upl" style="display:block;margin:10px 12px 2px;padding:16px;text-align:center;border-radius:14px;background:#c96f5b;color:#fff;font:bold 18px sans-serif;box-shadow:0 2px 6px #0003">Upload from Phone<input type="file" accept="image/*" id="file" hidden multiple></label>
+<div id="offer" hidden style="margin:6px 12px;padding:8px 10px;border-radius:12px;background:#fff;font:14px sans-serif;display:flex;gap:8px;align-items:center"><span style="flex:1">Remove the photo background?</span><button id="ofy" style="border:0;border-radius:14px;padding:7px 12px;background:#3b2f2f;color:#fff">Remove</button><button id="ofn" style="border:0;border-radius:14px;padding:7px 12px">No thanks</button></div>
+<div class="bar" id="items"></div>
+<div class="bar"><input id="link" placeholder="Paste image or Pinterest link" style="flex:1;min-width:0;border:0;border-radius:18px;padding:9px 12px;font:14px sans-serif"><button class="main" id="go">Add</button><button id="pst">Paste</button></div>
+<div id="msg" style="font:13px sans-serif;padding:0 12px;min-height:16px;color:#7a3e33"></div>
+<div class="tools" id="tools"><button id="mw" class="wand"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Magic Wand</button><button id="fw">Forward</button><button id="bk">Back</button><button id="rl">Rotate -</button><button id="rr">Rotate +</button><button id="up">Bigger</button><button id="dn">Smaller</button><button id="rb">Remove background</button><button id="inst" hidden>Install</button><button id="del">Delete</button></div>
+<div id="hint" style="font:13px sans-serif;padding:0 12px;color:#7a3e33">Tap a piece first to use the tools.</div>
+<div id="wrap"><canvas id="c" width="1080" height="1350"></canvas></div>
+<div class="tools"><label>Background <input type="color" id="bg" value="#ffffff"></label><button class="main" id="save">Save PNG</button></div>
+<div id="ed" hidden style="position:fixed;inset:0;background:#2a2222;z-index:9;display:none;flex-direction:column">
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0"><canvas id="ec" style="max-width:100%;max-height:100%;touch-action:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px"></canvas></div>
+<div style="padding:8px 12px;color:#f6d9c8;font:14px sans-serif;display:flex;gap:8px;align-items:center">Tolerance<input id="tol" type="range" min="5" max="120" value="40" style="flex:1"></div>
+<div class="bar" style="background:#3b2f2f"><button data-m="wand" class="main"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Wand</button><button data-m="erase">Eraser</button><button data-m="restore">Restore</button><button id="eu">Undo</button><button id="er">Reset</button><button id="ex">Cancel</button><button id="ed1" class="main">Done</button></div></div>
+<script>
+const S=(b)=>'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'+b+'</svg>');
+const samples=[
+S('<path d="M70 30 Q100 50 130 30 L175 55 L160 90 L140 80 L140 175 L60 175 L60 80 L40 90 L25 55 Z" fill="#d98c7a" stroke="#7a3e33" stroke-width="4"/><path d="M80 32 Q100 70 120 32" fill="none" stroke="#7a3e33" stroke-width="3"/>'),
+S('<path d="M65 20 L135 20 L140 60 L170 180 L30 180 L60 60 Z" fill="#2f4858" stroke="#1b2a33" stroke-width="4"/><path d="M60 60 L140 60" stroke="#c9a96e" stroke-width="5"/>'),
+S('<path d="M30 120 Q30 95 60 100 L120 110 Q150 70 165 95 L175 140 L30 140 Z" fill="#b5384a" stroke="#5e1b25" stroke-width="4"/><path d="M160 140 L165 175 L172 175 L175 140" fill="#5e1b25"/>'),
+S('<path d="M60 70 Q60 30 100 30 Q140 30 140 70" fill="none" stroke="#7a5230" stroke-width="8"/><rect x="35" y="70" width="130" height="100" rx="18" fill="#c08a5a" stroke="#7a5230" stroke-width="4"/><circle cx="100" cy="110" r="8" fill="#e8c66a"/>'),
+S('<circle cx="70" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><circle cx="135" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><path d="M104 96 Q102 88 100 96" stroke="#c9a96e" stroke-width="5" fill="none"/><path d="M36 92 L15 80 M169 92 L188 80" stroke="#c9a96e" stroke-width="5"/>'),
+S('<path d="M100 40 Q60 40 60 90 Q60 150 100 175 Q140 150 140 90 Q140 40 100 40Z" fill="#e8c66a" stroke="#9a7a2e" stroke-width="4"/><circle cx="100" cy="95" r="18" fill="#7fb7a4"/>')];
+const c=document.getElementById('c'),x=c.getContext('2d');let items=[],sel=null,bg='#ffffff';
+function add(src,w=380){const im=new Image();im.onload=()=>{const r=im.height/im.width;items.push(sel={im,x:540,y:600,w,h:w*r,a:0});draw()};im.src=src}
+const bar=document.getElementById('items');samples.forEach(s=>{const i=new Image();i.src=s;i.onclick=()=>add(s);bar.appendChild(i)});
+function draw(){const T=document.getElementById("tools");if(T){T.classList.toggle("off",!sel);document.getElementById("hint").style.visibility=sel?"hidden":"visible"}x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);for(const o of items){x.save();x.translate(o.x,o.y);x.rotate(o.a);x.drawImage(o.im,-o.w/2,-o.h/2,o.w,o.h);if(o===sel&&!x.noSel){x.strokeStyle='#c96f5b';x.lineWidth=4;x.setLineDash([14,10]);x.strokeRect(-o.w/2,-o.h/2,o.w,o.h)}x.restore()}}
+function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+function hit(p){for(let i=items.length-1;i>=0;i--){const o=items[i],dx=p.x-o.x,dy=p.y-o.y,cs=Math.cos(-o.a),sn=Math.sin(-o.a),lx=dx*cs-dy*sn,ly=dx*sn+dy*cs;if(Math.abs(lx)<o.w/2&&Math.abs(ly)<o.h/2)return o}return null}
+const ptrs=new Map();let g=null;
+c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,pt(e));if(ptrs.size==1){sel=hit(pt(e));draw()}start()};
+function start(){g=null;if(!sel||!ptrs.size)return;const p=[...ptrs.values()];if(p.length==1)g={p:p[0],x:sel.x,y:sel.y};else{const d=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y),an=Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x);g={d,an,w:sel.w,h:sel.h,a:sel.a}}}
+c.onpointermove=e=>{if(!ptrs.has(e.pointerId)||!sel||!g)return;ptrs.set(e.pointerId,pt(e));const p=[...ptrs.values()];if(p.length==1&&g.p){sel.x=g.x+p[0].x-g.p.x;sel.y=g.y+p[0].y-g.p.y}else if(p.length>1&&g.d){const s=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)/g.d;sel.w=g.w*s;sel.h=g.h*s;sel.a=g.a+Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x)-g.an}draw()};
+c.onpointerup=c.onpointercancel=e=>{ptrs.delete(e.pointerId);start()};
+const $=id=>document.getElementById(id),mv=d=>{if(!sel)return;const i=items.indexOf(sel);const j=Math.max(0,Math.min(items.length-1,i+d));items.splice(i,1);items.splice(j,0,sel);draw()};
+$('fw').onclick=()=>mv(1);$('bk').onclick=()=>mv(-1);
+$('rl').onclick=()=>{if(sel){sel.a-=.2;draw()}};$('rr').onclick=()=>{if(sel){sel.a+=.2;draw()}};
+$('up').onclick=()=>{if(sel){sel.w*=1.1;sel.h*=1.1;draw()}};$('dn').onclick=()=>{if(sel){sel.w/=1.1;sel.h/=1.1;draw()}};
+$('del').onclick=()=>{items=items.filter(o=>o!==sel);sel=null;draw()};
+$('bg').oninput=e=>{bg=e.target.value;draw()};
+$('file').onchange=e=>{addUploads([...e.target.files]);e.target.value=''};
+$('save').onclick=()=>{x.noSel=1;draw();const a=document.createElement('a');a.download='style-board.png';a.href=c.toDataURL('image/png');a.click();x.noSel=0;draw()};
+function shrink(b){return new Promise(ok=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>{const s=Math.min(1,1200/Math.max(i.width,i.height)),k=document.createElement('canvas');k.width=Math.round(i.width*s);k.height=Math.round(i.height*s);k.getContext('2d').drawImage(i,0,0,k.width,k.height);URL.revokeObjectURL(u);ok(k.toDataURL('image/jpeg',.9))};i.onerror=()=>ok(null);i.src=u})}
+let pending=[];function offer(){$('offer').hidden=!pending.length;$('offer').style.display=pending.length?'flex':'none'}
+async function addUploads(fs){let n=0;for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});pending.push(sel);n++;draw();r()};im.src=d})}offer();if(!n&&fs.length)msg("Couldn't read that photo.")}
+const msg=t=>$('msg').textContent=t;
+const PX=u=>'https://images.weserv.nl/?url='+encodeURIComponent(u.replace(/^https?:\/\//,''));
+function addUrl(u){return new Promise((ok,no)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const w=380;items.push(sel={im,x:540,y:600,w,h:w*im.height/im.width,a:0});draw();ok()};im.onerror=no;im.src=PX(u)})}
+async function og(page){for(const p of ['https://api.allorigins.win/raw?url=','https://corsproxy.io/?url=']){try{const r=await fetch(p+encodeURIComponent(page));if(!r.ok)continue;const t=await r.text();
+ const m=t.match(/property=["']og:image["'][^>]*content=["']([^"']+)/i)||t.match(/content=["']([^"']+)["'][^>]*property=["']og:image/i)||t.match(/https:\/\/i\.pinimg\.com\/originals\/[^"'\s]+/);if(m)return m[1]||m[0]}catch(e){}}return null}
+async function addLink(raw){const u=(raw.match(/https?:\/\/\S+/)||[])[0];if(!u)return msg('That doesn\'t look like a link.');msg('Loading...');
+ const looksImg=/\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)||/pinimg\.com|googleusercontent|gstatic/.test(u);
+ try{if(looksImg){await addUrl(u);return msg('')}}catch(e){}
+ const img=await og(u);if(img){try{await addUrl(img);return msg('')}catch(e){}}
+ try{await addUrl(u);msg('')}catch(e){msg('Couldn\'t grab that picture. Try long-pressing the image, choose "Open image in new tab" or "Copy image", then paste that.')}}
+$('go').onclick=()=>{addLink($('link').value);$('link').value=''};
+function addBlob(b){addUploads([b])}
+document.addEventListener('paste',e=>{const f=[...e.clipboardData.items].find(i=>i.type.startsWith('image/'));if(f){e.preventDefault();addBlob(f.getAsFile())}else if(e.target!==$('link')){const t=e.clipboardData.getData('text');if(t)addLink(t)}});
+$('pst').onclick=async()=>{try{for(const it of await navigator.clipboard.read()){const t=it.types.find(t=>t.startsWith('image/'));if(t)return addBlob(await it.getType(t));if(it.types.includes('text/plain'))return addLink(await(await it.getType('text/plain')).text())}msg('Clipboard is empty.')}catch(e){msg('Phone blocked clipboard access. Long-press the link box and tap Paste instead.')}};
+function toImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src})}
+function whiteOut(im){const k=document.createElement('canvas');k.width=im.naturalWidth;k.height=im.naturalHeight;const q=k.getContext('2d');q.drawImage(im,0,0);const d=q.getImageData(0,0,k.width,k.height),a=d.data;for(let i=0;i<a.length;i+=4){const m=Math.min(a[i],a[i+1],a[i+2]);if(m>235)a[i+3]=0;else if(m>215)a[i+3]=(235-m)*12}q.putImageData(d,0,0);return k.toDataURL()}
+let bgLib=null;async function rmbg(o){msg('Removing background (first time downloads ~40MB)...');
+ try{bgLib=bgLib||await import('https://esm.sh/@imgly/background-removal@1.4.5');const k=document.createElement('canvas');k.width=o.im.naturalWidth;k.height=o.im.naturalHeight;k.getContext('2d').drawImage(o.im,0,0);
+  const blob=await new Promise(r=>k.toBlob(r));const out=await bgLib.removeBackground(blob);o.im=await toImg(URL.createObjectURL(out));msg('')}
+ catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));msg('Smart removal unavailable; cleared white background instead.')}draw()}
+$('rb').onclick=()=>sel?rmbg(sel):msg('Tap an item first.');
+$('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)await rmbg(o)};$('ofn').onclick=()=>{pending=[];offer()};
+
+const ec=$('ec'),ex2=ec.getContext('2d',{willReadFrequently:true});let eo=null,orig=null,hist=[],mode='wand';
+$('mw').onclick=()=>{if(!sel)return msg('Tap an item first.');eo=sel;const im=eo.im;ec.width=im.naturalWidth;ec.height=im.naturalHeight;ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(im,0,0);
+ try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];$('ed').hidden=false;$('ed').style.display='flex'};
+document.querySelectorAll('#ed [data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#ed [data-m]').forEach(x=>x.className=x===b?'main':'')});
+const close=()=>{$('ed').hidden=true;$('ed').style.display='none'};
+function snap(){hist.push(ex2.getImageData(0,0,ec.width,ec.height));if(hist.length>20)hist.shift()}
+function ep(e){const r=ec.getBoundingClientRect();return[Math.floor((e.clientX-r.left)*ec.width/r.width),Math.floor((e.clientY-r.top)*ec.height/r.height)]}
+function fill(sx,sy){const W=ec.width,H=ec.height,d=ex2.getImageData(0,0,W,H),a=d.data,t=+$('tol').value,i0=(sy*W+sx)*4;if(a[i0+3]==0)return;
+ const R=a[i0],G=a[i0+1],B=a[i0+2],m=new Uint8Array(W*H),st=[sy*W+sx];m[st[0]]=1;
+ while(st.length){const p=st.pop(),x=p%W,y=(p-x)/W;for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,y>0?p-W:-1,y<H-1?p+W:-1]){if(q<0||m[q])continue;const j=q*4;
+  if(a[j+3]>0&&Math.abs(a[j]-R)+Math.abs(a[j+1]-G)+Math.abs(a[j+2]-B)<=t*1.5){m[q]=1;st.push(q)}else m[q]=2}}
+ for(let p=0;p<W*H;p++){if(m[p]==1)a[p*4+3]=0;else if(m[p]==2)a[p*4+3]=Math.round(a[p*4+3]*.45)}
+ for(let p=0;p<W*H;p++){if(m[p])continue;const x=p%W;if((x>0&&m[p-1]==2)||(x<W-1&&m[p+1]==2)||m[p-W]==2||m[p+W]==2)a[p*4+3]=Math.round(a[p*4+3]*.8)}
+ ex2.putImageData(d,0,0)}
+let brushing=false;const tmp=document.createElement('canvas');
+function brush([x,y]){const r=Math.max(8,ec.width/30);if(mode=='erase'){ex2.save();ex2.globalCompositeOperation='destination-out';ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.fill();ex2.restore()}
+ else{tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);ex2.save();ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.clip();ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(tmp,0,0);ex2.restore()}}
+ec.onpointerdown=e=>{snap();const p=ep(e);if(mode=='wand')fill(...p);else{brushing=true;ec.setPointerCapture(e.pointerId);brush(p)}};
+ec.onpointermove=e=>{if(brushing)brush(ep(e))};ec.onpointerup=ec.onpointercancel=()=>brushing=false;
+$('eu').onclick=()=>{const s=hist.pop();if(s)ex2.putImageData(s,0,0)};$('er').onclick=()=>{snap();ex2.putImageData(orig,0,0)};$('ex').onclick=close;
+$('ed1').onclick=async()=>{eo.im=await toImg(ec.toDataURL('image/png'));close();draw()};
+let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
+if('serviceWorker'in navigator){navigator.serviceWorker.register('../sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&!location.search){rl=1;location.reload()}})}
+(async()=>{const q=new URLSearchParams(location.search);if(!q.has('shared'))return;history.replaceState(0,'','./');const n=+q.get('shared');
+ if(n){const c=await caches.open('sb-share');for(let i=0;i<n;i++){const r=await c.match('shared-'+i);if(r)addBlob(await r.blob());await c.delete('shared-'+i)}}
+ else{const t=(q.get('url')||'')+' '+(q.get('text')||'');if(t.trim())addLink(t)}})();
+draw();
+</script></body></html>

@@ -78,7 +78,7 @@ let bgLib=null;async function rmbg(o){msg('Removing background (first time downl
 $('rb').onclick=()=>sel?rmbg(sel):msg('Tap an item first.');
 $('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)await rmbg(o)};$('ofn').onclick=()=>{pending=[];offer()};
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&!location.search){rl=1;location.reload()}})}
 (async()=>{const q=new URLSearchParams(location.search);if(!q.has('shared'))return;history.replaceState(0,'','./');const n=+q.get('shared');
  if(n){const c=await caches.open('sb-share');for(let i=0;i<n;i++){const r=await c.match('shared-'+i);if(r)addBlob(await r.blob());await c.delete('shared-'+i)}}
  else{const t=(q.get('url')||'')+' '+(q.get('text')||'');if(t.trim())addLink(t)}})();

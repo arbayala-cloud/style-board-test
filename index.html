@@ -21,9 +21,13 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 <button id="fw">Forward</button><button id="bk">Back</button>
 <button id="rl">Rotate -</button><button id="rr">Rotate +</button>
 <button id="up">Bigger</button><button id="dn">Smaller</button>
-<button id="rb">Remove background</button><button id="inst" hidden>Install</button><button id="del">Delete</button>
+<button id="mw"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Magic Wand</button><button id="rb">Remove background</button><button id="inst" hidden>Install</button><button id="del">Delete</button>
 <label>Background <input type="color" id="bg" value="#ffffff"></label>
 <button class="main" id="save">Save PNG</button></div>
+<div id="ed" hidden style="position:fixed;inset:0;background:#2a2222;z-index:9;display:none;flex-direction:column">
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0"><canvas id="ec" style="max-width:100%;max-height:100%;touch-action:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px"></canvas></div>
+<div style="padding:8px 12px;color:#f6d9c8;font:14px sans-serif;display:flex;gap:8px;align-items:center">Tolerance<input id="tol" type="range" min="5" max="120" value="40" style="flex:1"></div>
+<div class="bar" style="background:#3b2f2f"><button data-m="wand" class="main"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Wand</button><button data-m="erase">Eraser</button><button data-m="restore">Restore</button><button id="eu">Undo</button><button id="er">Reset</button><button id="ex">Cancel</button><button id="ed1" class="main">Done</button></div></div>
 <script>
 const S=(b)=>'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'+b+'</svg>');
 const samples=[
@@ -77,6 +81,28 @@ let bgLib=null;async function rmbg(o){msg('Removing background (first time downl
  catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));msg('Smart removal unavailable; cleared white background instead.')}draw()}
 $('rb').onclick=()=>sel?rmbg(sel):msg('Tap an item first.');
 $('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)await rmbg(o)};$('ofn').onclick=()=>{pending=[];offer()};
+
+const ec=$('ec'),ex2=ec.getContext('2d',{willReadFrequently:true});let eo=null,orig=null,hist=[],mode='wand';
+$('mw').onclick=()=>{if(!sel)return msg('Tap an item first.');eo=sel;const im=eo.im;ec.width=im.naturalWidth;ec.height=im.naturalHeight;ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(im,0,0);
+ try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];$('ed').hidden=false;$('ed').style.display='flex'};
+document.querySelectorAll('#ed [data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#ed [data-m]').forEach(x=>x.className=x===b?'main':'')});
+const close=()=>{$('ed').hidden=true;$('ed').style.display='none'};
+function snap(){hist.push(ex2.getImageData(0,0,ec.width,ec.height));if(hist.length>20)hist.shift()}
+function ep(e){const r=ec.getBoundingClientRect();return[Math.floor((e.clientX-r.left)*ec.width/r.width),Math.floor((e.clientY-r.top)*ec.height/r.height)]}
+function fill(sx,sy){const W=ec.width,H=ec.height,d=ex2.getImageData(0,0,W,H),a=d.data,t=+$('tol').value,i0=(sy*W+sx)*4;if(a[i0+3]==0)return;
+ const R=a[i0],G=a[i0+1],B=a[i0+2],m=new Uint8Array(W*H),st=[sy*W+sx];m[st[0]]=1;
+ while(st.length){const p=st.pop(),x=p%W,y=(p-x)/W;for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,y>0?p-W:-1,y<H-1?p+W:-1]){if(q<0||m[q])continue;const j=q*4;
+  if(a[j+3]>0&&Math.abs(a[j]-R)+Math.abs(a[j+1]-G)+Math.abs(a[j+2]-B)<=t*1.5){m[q]=1;st.push(q)}else m[q]=2}}
+ for(let p=0;p<W*H;p++){if(m[p]==1)a[p*4+3]=0;else if(m[p]==2)a[p*4+3]=Math.round(a[p*4+3]*.45)}
+ for(let p=0;p<W*H;p++){if(m[p])continue;const x=p%W;if((x>0&&m[p-1]==2)||(x<W-1&&m[p+1]==2)||m[p-W]==2||m[p+W]==2)a[p*4+3]=Math.round(a[p*4+3]*.8)}
+ ex2.putImageData(d,0,0)}
+let brushing=false;const tmp=document.createElement('canvas');
+function brush([x,y]){const r=Math.max(8,ec.width/30);if(mode=='erase'){ex2.save();ex2.globalCompositeOperation='destination-out';ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.fill();ex2.restore()}
+ else{tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);ex2.save();ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.clip();ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(tmp,0,0);ex2.restore()}}
+ec.onpointerdown=e=>{snap();const p=ep(e);if(mode=='wand')fill(...p);else{brushing=true;ec.setPointerCapture(e.pointerId);brush(p)}};
+ec.onpointermove=e=>{if(brushing)brush(ep(e))};ec.onpointerup=ec.onpointercancel=()=>brushing=false;
+$('eu').onclick=()=>{const s=hist.pop();if(s)ex2.putImageData(s,0,0)};$('er').onclick=()=>{snap();ex2.putImageData(orig,0,0)};$('ex').onclick=close;
+$('ed1').onclick=async()=>{eo.im=await toImg(ec.toDataURL('image/png'));close();draw()};
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&!location.search){rl=1;location.reload()}})}
 (async()=>{const q=new URLSearchParams(location.search);if(!q.has('shared'))return;history.replaceState(0,'','./');const n=+q.get('shared');

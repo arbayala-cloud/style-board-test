@@ -12,7 +12,7 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 .bar .main{background:#c96f5b;color:#fff}
 #items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
 </style></head><body>
-<header>Style Board<small>prototype v7</small></header>
+<header>Style Board<small>prototype v8</small></header>
 <label id="upl" style="display:block;margin:10px 12px 2px;padding:16px;text-align:center;border-radius:14px;background:#c96f5b;color:#fff;font:bold 18px sans-serif;box-shadow:0 2px 6px #0003">Upload from Phone<input type="file" accept="image/*" id="file" hidden multiple></label>
 <div id="offer" hidden style="margin:6px 12px;padding:8px 10px;border-radius:12px;background:#fff;font:14px sans-serif;display:flex;gap:8px;align-items:center"><span style="flex:1">Remove the photo background?</span><button id="ofy" style="border:0;border-radius:14px;padding:7px 12px;background:#3b2f2f;color:#fff">Remove</button><button id="ofn" style="border:0;border-radius:14px;padding:7px 12px">No thanks</button></div>
 <div class="bar" id="items"></div>
@@ -24,8 +24,9 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 <div class="tools"><label>Background <input type="color" id="bg" value="#ffffff"></label><button class="main" id="save">Save PNG</button></div>
 <div id="ed" hidden style="position:fixed;inset:0;background:#2a2222;z-index:9;display:none;flex-direction:column">
 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0"><canvas id="ec" style="max-width:100%;max-height:100%;touch-action:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px"></canvas></div>
+<div id="busy" style="display:none;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:#000c;color:#fff;padding:14px 20px;border-radius:14px;font:16px sans-serif">Finding it...</div><div id="emsg" style="color:#f6d9c8;font:13px sans-serif;padding:0 12px">Tap the piece you want to keep. Tap again to add more.</div>
 <div style="padding:8px 12px;color:#f6d9c8;font:14px sans-serif;display:flex;gap:8px;align-items:center">Tolerance<input id="tol" type="range" min="5" max="120" value="40" style="flex:1"></div>
-<div class="bar" style="background:#3b2f2f"><button data-m="wand" class="main"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Wand</button><button data-m="erase">Eraser</button><button data-m="restore">Restore</button><button id="eu">Undo</button><button id="er">Reset</button><button id="ex">Cancel</button><button id="ed1" class="main">Done</button></div></div>
+<div class="bar" style="background:#3b2f2f"><button data-m="keep" class="main">Tap to Keep</button><button id="auto">Auto</button><button data-m="wand"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Wand</button><button data-m="erase">Eraser</button><button data-m="restore">Restore</button><button id="eu">Undo</button><button id="er">Reset</button><button id="ex">Cancel</button><button id="ed1" class="main">Done</button></div></div>
 <script>
 const S=(b)=>'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">'+b+'</svg>');
 const samples=[
@@ -80,12 +81,12 @@ let bgLib=null;async function rmbg(o){msg('Removing background (first time downl
 $('rb').onclick=()=>sel?rmbg(sel):msg('Tap an item first.');
 $('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)await rmbg(o)};$('ofn').onclick=()=>{pending=[];offer()};
 
-const ec=$('ec'),ex2=ec.getContext('2d',{willReadFrequently:true});let eo=null,orig=null,hist=[],mode='wand';
+const ec=$('ec'),ex2=ec.getContext('2d',{willReadFrequently:true});let eo=null,orig=null,hist=[],mode='keep';
 $('mw').onclick=()=>{if(!sel)return msg('Tap an item first.');eo=sel;const im=eo.im;ec.width=im.naturalWidth;ec.height=im.naturalHeight;ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(im,0,0);
- try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];$('ed').hidden=false;$('ed').style.display='flex'};
+ try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];km=null;emb=null;$('ed').hidden=false;$('ed').style.display='flex'};
 document.querySelectorAll('#ed [data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#ed [data-m]').forEach(x=>x.className=x===b?'main':'')});
 const close=()=>{$('ed').hidden=true;$('ed').style.display='none'};
-function snap(){hist.push(ex2.getImageData(0,0,ec.width,ec.height));if(hist.length>20)hist.shift()}
+function snap(){hist.push([ex2.getImageData(0,0,ec.width,ec.height),km&&km.slice()]);if(hist.length>20)hist.shift()}
 function ep(e){const r=ec.getBoundingClientRect();return[Math.floor((e.clientX-r.left)*ec.width/r.width),Math.floor((e.clientY-r.top)*ec.height/r.height)]}
 function fill(sx,sy){const W=ec.width,H=ec.height,d=ex2.getImageData(0,0,W,H),a=d.data,t=+$('tol').value,i0=(sy*W+sx)*4;if(a[i0+3]==0)return;
  const R=a[i0],G=a[i0+1],B=a[i0+2],m=new Uint8Array(W*H),st=[sy*W+sx];m[st[0]]=1;
@@ -94,12 +95,35 @@ function fill(sx,sy){const W=ec.width,H=ec.height,d=ex2.getImageData(0,0,W,H),a=
  for(let p=0;p<W*H;p++){if(m[p]==1)a[p*4+3]=0;else if(m[p]==2)a[p*4+3]=Math.round(a[p*4+3]*.45)}
  for(let p=0;p<W*H;p++){if(m[p])continue;const x=p%W;if((x>0&&m[p-1]==2)||(x<W-1&&m[p+1]==2)||m[p-W]==2||m[p+W]==2)a[p*4+3]=Math.round(a[p*4+3]*.8)}
  ex2.putImageData(d,0,0)}
+
+let km=null,emb=null,busy=false,T=null,sam=null,cut=null;const stat=(b,t)=>{busy=b;$('busy').style.display=b?'block':'none';if(t)$('emsg').textContent=t};
+function origURL(){tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);return tmp.toDataURL('image/png')}
+async function samMask(x,y){if(!T)T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
+ if(!sam){const id='Xenova/slimsam-77-uniform';sam=[await T.SamModel.from_pretrained(id,{dtype:'fp32'}),await T.AutoProcessor.from_pretrained(id)]}
+ const[model,proc]=sam;if(!emb){const img=await T.RawImage.fromURL(origURL());const inp=await proc(img);emb=[inp,await model.get_image_embeddings(inp)]}
+ const[inp,e]=emb;const pts=new T.Tensor('float32',[x*inp.reshaped_input_sizes[0][1]/ec.width,y*inp.reshaped_input_sizes[0][0]/ec.height],[1,1,1,2]),lab=new T.Tensor('int64',[1n],[1,1,1]);
+ const out=await model({...e,input_points:pts,input_labels:lab});const ms=await proc.post_process_masks(out.pred_masks,inp.original_sizes,inp.reshaped_input_sizes);
+ const sc=out.iou_scores.data;let bi=0;for(let i=1;i<sc.length;i++)if(sc[i]>sc[bi])bi=i;const W=ec.width,H=ec.height,d=ms[0].data,m=new Uint8Array(W*H);for(let i=0;i<W*H;i++)m[i]=d[bi*W*H+i]?1:0;return m}
+async function cutAlpha(){if(!cut){bgLib=bgLib||await import('https://esm.sh/@imgly/background-removal@1.4.5');const b=await(await fetch(origURL())).blob();const i=await toImg(URL.createObjectURL(await bgLib.removeBackground(b)));
+ tmp.width=ec.width;tmp.height=ec.height;const q=tmp.getContext('2d');q.clearRect(0,0,ec.width,ec.height);q.drawImage(i,0,0,ec.width,ec.height);const a=q.getImageData(0,0,ec.width,ec.height).data;cut=new Uint8Array(ec.width*ec.height);for(let p=0;p<cut.length;p++)cut[p]=a[p*4+3]>110?1:0}return cut}
+function comp(src,sx,sy){const W=ec.width,H=ec.height,m=new Uint8Array(W*H),s0=sy*W+sx;if(!src[s0])return null;const st=[s0];m[s0]=1;while(st.length){const p=st.pop(),x=p%W;for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W])if(q>=0&&q<W*H&&!m[q]&&src[q]){m[q]=1;st.push(q)}}return m}
+function colorKeep(sx,sy){const W=ec.width,H=ec.height,a=orig.data,t=+$('tol').value*1.5,i0=(sy*W+sx)*4,ok=new Uint8Array(W*H);for(let p=0;p<W*H;p++){const j=p*4;ok[p]=Math.abs(a[j]-a[i0])+Math.abs(a[j+1]-a[i0+1])+Math.abs(a[j+2]-a[i0+2])<=t?1:0}return comp(ok,sx,sy)}
+function largest(src){const W=ec.width,seen=new Uint8Array(src.length);let best=null,bn=0;for(let p=0;p<src.length;p++)if(src[p]&&!seen[p]){const m=comp(src,p%W,(p/W)|0);let n=0;for(let i=0;i<m.length;i++)if(m[i]){seen[i]=1;n++}if(n>bn){bn=n;best=m}}return best}
+function applyKeep(){const W=ec.width,H=ec.height,d=new ImageData(new Uint8ClampedArray(orig.data),W,H),a=d.data;for(let p=0;p<W*H;p++){if(!km[p])a[p*4+3]=0;else{const x=p%W;if((x>0&&!km[p-1])||(x<W-1&&!km[p+1])||!km[p-W]||!km[p+W])a[p*4+3]>>=1}}ex2.putImageData(d,0,0)}
+async function keepAt(x,y){snap();stat(true);let m=null,how='';
+ try{m=await samMask(x,y);how='Smart pick'}catch(e){console.warn('sam',e)}
+ if(!m||!m.some(v=>v)){try{m=comp(await cutAlpha(),x,y);how='Cutout'}catch(e){console.warn('cut',e)}}
+ if(!m){m=colorKeep(x,y);how='Color match'}
+ if(km)for(let i=0;i<m.length;i++)km[i]|=m[i];else km=m;applyKeep();stat(false,how+' done. Tap more to add, or Undo.')}
+$('auto').onclick=async()=>{if(busy)return;snap();stat(true);let m=null;try{m=largest(await cutAlpha())}catch(e){console.warn(e)}
+ if(!m){const W=ec.width,H=ec.height,a=orig.data,ok=new Uint8Array(W*H);for(let p=0;p<W*H;p++)ok[p]=Math.min(a[p*4],a[p*4+1],a[p*4+2])<225?1:0;m=largest(ok)}
+ if(m){km=m;applyKeep();stat(false,'Kept the main piece. Tap to add more, or Undo.')}else stat(false,'Couldn\'t find a main piece.')};
 let brushing=false;const tmp=document.createElement('canvas');
 function brush([x,y]){const r=Math.max(8,ec.width/30);if(mode=='erase'){ex2.save();ex2.globalCompositeOperation='destination-out';ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.fill();ex2.restore()}
  else{tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);ex2.save();ex2.beginPath();ex2.arc(x,y,r,0,7);ex2.clip();ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(tmp,0,0);ex2.restore()}}
-ec.onpointerdown=e=>{snap();const p=ep(e);if(mode=='wand')fill(...p);else{brushing=true;ec.setPointerCapture(e.pointerId);brush(p)}};
+ec.onpointerdown=e=>{if(busy)return;const p=ep(e);if(mode=='keep')return keepAt(...p);snap();if(mode=='wand')fill(...p);else{brushing=true;ec.setPointerCapture(e.pointerId);brush(p)}};
 ec.onpointermove=e=>{if(brushing)brush(ep(e))};ec.onpointerup=ec.onpointercancel=()=>brushing=false;
-$('eu').onclick=()=>{const s=hist.pop();if(s)ex2.putImageData(s,0,0)};$('er').onclick=()=>{snap();ex2.putImageData(orig,0,0)};$('ex').onclick=close;
+$('eu').onclick=()=>{const s=hist.pop();if(s){ex2.putImageData(s[0],0,0);km=s[1]}};$('er').onclick=()=>{snap();km=null;ex2.putImageData(orig,0,0)};$('ex').onclick=close;
 $('ed1').onclick=async()=>{eo.im=await toImg(ec.toDataURL('image/png'));close();draw()};
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
 if('serviceWorker'in navigator){navigator.serviceWorker.register('../sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&!location.search){rl=1;location.reload()}})}

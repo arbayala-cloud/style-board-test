@@ -12,8 +12,9 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 .bar .main{background:#c96f5b;color:#fff}
 #items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
 </style></head><body>
-<header>Style Board<small>prototype v8</small></header>
+<header>Style Board<small>prototype v9</small><span id="ready" style="float:right;font:12px sans-serif;opacity:.85;margin-top:5px"></span></header>
 <label id="upl" style="display:block;margin:10px 12px 2px;padding:16px;text-align:center;border-radius:14px;background:#c96f5b;color:#fff;font:bold 18px sans-serif;box-shadow:0 2px 6px #0003">Upload from Phone<input type="file" accept="image/*" id="file" hidden multiple></label>
+<div style="display:flex;gap:8px;align-items:center;margin:4px 14px;font:14px sans-serif"><label><input type="checkbox" id="ac" checked onchange="localStorage.ac=this.checked"> Auto cutout on upload</label><span id="qp" style="color:#c96f5b"></span></div>
 <div id="offer" hidden style="margin:6px 12px;padding:8px 10px;border-radius:12px;background:#fff;font:14px sans-serif;display:flex;gap:8px;align-items:center"><span style="flex:1">Remove the photo background?</span><button id="ofy" style="border:0;border-radius:14px;padding:7px 12px;background:#3b2f2f;color:#fff">Remove</button><button id="ofn" style="border:0;border-radius:14px;padding:7px 12px">No thanks</button></div>
 <div class="bar" id="items"></div>
 <div class="bar"><input id="link" placeholder="Paste image or Pinterest link" style="flex:1;min-width:0;border:0;border-radius:18px;padding:9px 12px;font:14px sans-serif"><button class="main" id="go">Add</button><button id="pst">Paste</button></div>
@@ -57,10 +58,10 @@ $('file').onchange=e=>{addUploads([...e.target.files]);e.target.value=''};
 $('save').onclick=()=>{x.noSel=1;draw();const a=document.createElement('a');a.download='style-board.png';a.href=c.toDataURL('image/png');a.click();x.noSel=0;draw()};
 function shrink(b){return new Promise(ok=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>{const s=Math.min(1,1200/Math.max(i.width,i.height)),k=document.createElement('canvas');k.width=Math.round(i.width*s);k.height=Math.round(i.height*s);k.getContext('2d').drawImage(i,0,0,k.width,k.height);URL.revokeObjectURL(u);ok(k.toDataURL('image/jpeg',.9))};i.onerror=()=>ok(null);i.src=u})}
 let pending=[];function offer(){$('offer').hidden=!pending.length;$('offer').style.display=pending.length?'flex':'none'}
-async function addUploads(fs){let n=0;for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});pending.push(sel);n++;draw();r()};im.src=d})}offer();if(!n&&fs.length)msg("Couldn't read that photo.")}
+async function addUploads(fs){let n=0,up=[];for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});(autoOn()?up:pending).push(sel);n++;draw();r()};im.src=d})}offer();if(up.length)enqueue(up);if(!n&&fs.length)msg("Couldn't read that photo.")}
 const msg=t=>$('msg').textContent=t;
 const PX=u=>'https://images.weserv.nl/?url='+encodeURIComponent(u.replace(/^https?:\/\//,''));
-function addUrl(u){return new Promise((ok,no)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const w=380;items.push(sel={im,x:540,y:600,w,h:w*im.height/im.width,a:0});draw();ok()};im.onerror=no;im.src=PX(u)})}
+function addUrl(u){return new Promise((ok,no)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const w=380;items.push(sel={im,x:540,y:600,w,h:w*im.height/im.width,a:0});draw();if(autoOn())enqueue([sel]);ok()};im.onerror=no;im.src=PX(u)})}
 async function og(page){for(const p of ['https://api.allorigins.win/raw?url=','https://corsproxy.io/?url=']){try{const r=await fetch(p+encodeURIComponent(page));if(!r.ok)continue;const t=await r.text();
  const m=t.match(/property=["']og:image["'][^>]*content=["']([^"']+)/i)||t.match(/content=["']([^"']+)["'][^>]*property=["']og:image/i)||t.match(/https:\/\/i\.pinimg\.com\/originals\/[^"'\s]+/);if(m)return m[1]||m[0]}catch(e){}}return null}
 async function addLink(raw){const u=(raw.match(/https?:\/\/\S+/)||[])[0];if(!u)return msg('That doesn\'t look like a link.');msg('Loading...');
@@ -74,7 +75,7 @@ document.addEventListener('paste',e=>{const f=[...e.clipboardData.items].find(i=
 $('pst').onclick=async()=>{try{for(const it of await navigator.clipboard.read()){const t=it.types.find(t=>t.startsWith('image/'));if(t)return addBlob(await it.getType(t));if(it.types.includes('text/plain'))return addLink(await(await it.getType('text/plain')).text())}msg('Clipboard is empty.')}catch(e){msg('Phone blocked clipboard access. Long-press the link box and tap Paste instead.')}};
 function toImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src})}
 function whiteOut(im){const k=document.createElement('canvas');k.width=im.naturalWidth;k.height=im.naturalHeight;const q=k.getContext('2d');q.drawImage(im,0,0);const d=q.getImageData(0,0,k.width,k.height),a=d.data;for(let i=0;i<a.length;i+=4){const m=Math.min(a[i],a[i+1],a[i+2]);if(m>235)a[i+3]=0;else if(m>215)a[i+3]=(235-m)*12}q.putImageData(d,0,0);return k.toDataURL()}
-let bgLib=null;async function rmbg(o){msg('Removing background (first time downloads ~40MB)...');
+let bgLib=null;async function rmbg(o){msg('Removing background...');try{await autoCut(o);msg('');return}catch(e){console.warn(e)}
  try{bgLib=bgLib||await import('https://esm.sh/@imgly/background-removal@1.4.5');const k=document.createElement('canvas');k.width=o.im.naturalWidth;k.height=o.im.naturalHeight;k.getContext('2d').drawImage(o.im,0,0);
   const blob=await new Promise(r=>k.toBlob(r));const out=await bgLib.removeBackground(blob);o.im=await toImg(URL.createObjectURL(out));msg('')}
  catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));msg('Smart removal unavailable; cleared white background instead.')}draw()}
@@ -98,14 +99,22 @@ function fill(sx,sy){const W=ec.width,H=ec.height,d=ex2.getImageData(0,0,W,H),a=
 
 let km=null,emb=null,busy=false,T=null,sam=null,cut=null;const stat=(b,t)=>{busy=b;$('busy').style.display=b?'block':'none';if(t)$('emsg').textContent=t};
 function origURL(){tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);return tmp.toDataURL('image/png')}
-async function samMask(x,y){if(!T)T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
- if(!sam){const id='Xenova/slimsam-77-uniform';sam=[await T.SamModel.from_pretrained(id,{dtype:'fp32'}),await T.AutoProcessor.from_pretrained(id)]}
- const[model,proc]=sam;if(!emb){const img=await T.RawImage.fromURL(origURL());const inp=await proc(img);emb=[inp,await model.get_image_embeddings(inp)]}
- const[inp,e]=emb;const pts=new T.Tensor('float32',[x*inp.reshaped_input_sizes[0][1]/ec.width,y*inp.reshaped_input_sizes[0][0]/ec.height],[1,1,1,2]),lab=new T.Tensor('int64',[1n],[1,1,1]);
- const out=await model({...e,input_points:pts,input_labels:lab});const ms=await proc.post_process_masks(out.pred_masks,inp.original_sizes,inp.reshaped_input_sizes);
- const sc=out.iou_scores.data;let bi=0;for(let i=1;i<sc.length;i++)if(sc[i]>sc[bi])bi=i;const W=ec.width,H=ec.height,d=ms[0].data,m=new Uint8Array(W*H);for(let i=0;i<W*H;i++)m[i]=d[bi*W*H+i]?1:0;return m}
-async function cutAlpha(){if(!cut){bgLib=bgLib||await import('https://esm.sh/@imgly/background-removal@1.4.5');const b=await(await fetch(origURL())).blob();const i=await toImg(URL.createObjectURL(await bgLib.removeBackground(b)));
- tmp.width=ec.width;tmp.height=ec.height;const q=tmp.getContext('2d');q.clearRect(0,0,ec.width,ec.height);q.drawImage(i,0,0,ec.width,ec.height);const a=q.getImageData(0,0,ec.width,ec.height).data;cut=new Uint8Array(ec.width*ec.height);for(let p=0;p<cut.length;p++)cut[p]=a[p*4+3]>110?1:0}return cut}
+const SZ=640;let W0=null,wid=0;const waits={};function wk(){if(!W0){W0=new Worker(new URL('worker.js',document.baseURI.replace(/v2\/$/,'')),{type:'module'});W0.onmessage=({data})=>{const w=waits[data.id];delete waits[data.id];data.err?w[1](new Error(data.err)):w[0](data.r)}}return W0}
+const ask=(q,tr)=>new Promise((a,b)=>{q.id=++wid;waits[q.id]=[a,b];wk().postMessage(q,tr||[])});
+function small(srcCanvasOrImg,w,h){const s=Math.min(1,SZ/Math.max(w,h)),k=document.createElement('canvas');k.width=Math.round(w*s);k.height=Math.round(h*s);k.getContext('2d').drawImage(srcCanvasOrImg,0,0,k.width,k.height);return k.getContext('2d').getImageData(0,0,k.width,k.height)}
+function upMask(m,sw,sh,W,H){const k=document.createElement('canvas');k.width=sw;k.height=sh;const d=new ImageData(sw,sh);for(let i=0;i<m.length;i++){d.data[i*4+3]=m[i]}k.getContext('2d').putImageData(d,0,0);
+ const b=document.createElement('canvas');b.width=W;b.height=H;const q=b.getContext('2d');q.imageSmoothingEnabled=true;q.drawImage(k,0,0,W,H);const a=q.getImageData(0,0,W,H).data,o=new Uint8Array(W*H);for(let i=0;i<o.length;i++)o[i]=a[i*4+3]>110?1:0;return o}
+function origCanvas(){tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);return tmp}
+async function samMask(x,y){const d=small(origCanvas(),ec.width,ec.height),s=d.width/ec.width;if(!eo.key)eo.key=Math.random();const m=await ask({type:'sam',key:eo.key,d,x:x*s,y:y*s});return upMask(m,d.width,d.height,ec.width,ec.height)}
+async function cutAlpha(){if(eo.cut&&eo.cut.length==ec.width*ec.height)return eo.cut;const d=small(origCanvas(),ec.width,ec.height);const m=await ask({type:'cut',d});return eo.cut=upMask(m,d.width,d.height,ec.width,ec.height)}
+async function autoCut(o){const w=o.im.naturalWidth,h=o.im.naturalHeight,d=small(o.im,w,h);const m=await ask({type:'cut',d});const full=upMask(m,d.width,d.height,w,h);
+ const k=document.createElement('canvas');k.width=w;k.height=h;const q=k.getContext('2d');q.drawImage(o.im,0,0);const id=q.getImageData(0,0,w,h);o.orig=o.orig||o.im;
+ for(let i=0;i<full.length;i++)if(!full[i])id.data[i*4+3]=0;q.putImageData(id,0,0);o.im=await toImg(k.toDataURL('image/png'));draw()}
+let queue=[],qrun=false,qdone=0,qtot=0;function qmsg(){$('qp').textContent=qrun?`Cutting out ${qdone+1} of ${qtot}...`:''}
+async function enqueue(list){queue.push(...list);qtot+=list.length;if(qrun)return;qrun=true;while(queue.length){qmsg();const o=queue.shift();try{await autoCut(o)}catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));draw()}qdone++}qrun=false;qdone=qtot=0;qmsg()}
+if(localStorage.ac==='false')$('ac').checked=false;const autoOn=()=>$('ac').checked;
+function warm(){const st=$('ready');st.textContent='Getting the cutout tool ready...';const t=performance.now();ask({type:'warm'}).then(()=>{st.textContent='Ready';window.warmMs=performance.now()-t}).catch(e=>{console.warn(e);st.textContent='Cutout tool offline'})}
+(window.requestIdleCallback||setTimeout)(warm,{timeout:1500});
 function comp(src,sx,sy){const W=ec.width,H=ec.height,m=new Uint8Array(W*H),s0=sy*W+sx;if(!src[s0])return null;const st=[s0];m[s0]=1;while(st.length){const p=st.pop(),x=p%W;for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W])if(q>=0&&q<W*H&&!m[q]&&src[q]){m[q]=1;st.push(q)}}return m}
 function colorKeep(sx,sy){const W=ec.width,H=ec.height,a=orig.data,t=+$('tol').value*1.5,i0=(sy*W+sx)*4,ok=new Uint8Array(W*H);for(let p=0;p<W*H;p++){const j=p*4;ok[p]=Math.abs(a[j]-a[i0])+Math.abs(a[j+1]-a[i0+1])+Math.abs(a[j+2]-a[i0+2])<=t?1:0}return comp(ok,sx,sy)}
 function largest(src){const W=ec.width,seen=new Uint8Array(src.length);let best=null,bn=0;for(let p=0;p<src.length;p++)if(src[p]&&!seen[p]){const m=comp(src,p%W,(p/W)|0);let n=0;for(let i=0;i<m.length;i++)if(m[i]){seen[i]=1;n++}if(n>bn){bn=n;best=m}}return best}

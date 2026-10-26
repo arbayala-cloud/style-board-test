@@ -12,7 +12,7 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 .bar .main{background:#c96f5b;color:#fff}
 #items img{width:44px;height:44px;flex:none;background:#fff;border-radius:10px;padding:4px;box-shadow:0 1px 3px #0002}
 </style></head><body>
-<header>Style Board<small>prototype v9</small><span id="ready" style="float:right;font:12px sans-serif;opacity:.85;margin-top:5px"></span></header>
+<header>Style Board<small>prototype v10</small><span id="ready" style="float:right;font:12px sans-serif;opacity:.85;margin-top:5px"></span></header>
 <label id="upl" style="display:block;margin:10px 12px 2px;padding:16px;text-align:center;border-radius:14px;background:#c96f5b;color:#fff;font:bold 18px sans-serif;box-shadow:0 2px 6px #0003">Upload from Phone<input type="file" accept="image/*" id="file" hidden multiple></label>
 <div style="display:flex;gap:8px;align-items:center;margin:4px 14px;font:14px sans-serif"><label><input type="checkbox" id="ac" checked onchange="localStorage.ac=this.checked"> Auto cutout on upload</label><span id="qp" style="color:#c96f5b"></span></div>
 <div id="offer" hidden style="margin:6px 12px;padding:8px 10px;border-radius:12px;background:#fff;font:14px sans-serif;display:flex;gap:8px;align-items:center"><span style="flex:1">Remove the photo background?</span><button id="ofy" style="border:0;border-radius:14px;padding:7px 12px;background:#3b2f2f;color:#fff">Remove</button><button id="ofn" style="border:0;border-radius:14px;padding:7px 12px">No thanks</button></div>
@@ -25,7 +25,7 @@ canvas{background:#fff;border-radius:10px;box-shadow:0 4px 18px #0002;touch-acti
 <div class="tools"><label>Background <input type="color" id="bg" value="#ffffff"></label><button class="main" id="save">Save PNG</button></div>
 <div id="ed" hidden style="position:fixed;inset:0;background:#2a2222;z-index:9;display:none;flex-direction:column">
 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px;min-height:0"><canvas id="ec" style="max-width:100%;max-height:100%;touch-action:none;background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px"></canvas></div>
-<div id="busy" style="display:none;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);background:#000c;color:#fff;padding:14px 20px;border-radius:14px;font:16px sans-serif">Finding it...</div><div id="emsg" style="color:#f6d9c8;font:13px sans-serif;padding:0 12px">Tap the piece you want to keep. Tap again to add more.</div>
+<div id="busy" style="display:none;position:absolute;left:50%;top:12%;transform:translate(-50%,-50%);background:#000c;color:#fff;padding:14px 20px;border-radius:14px;font:16px sans-serif">Finding it...</div><div id="emsg" style="color:#f6d9c8;font:13px sans-serif;padding:0 12px">Tap the piece you want to keep. Tap again to add more.</div>
 <div style="padding:8px 12px;color:#f6d9c8;font:14px sans-serif;display:flex;gap:8px;align-items:center">Tolerance<input id="tol" type="range" min="5" max="120" value="40" style="flex:1"></div>
 <div class="bar" style="background:#3b2f2f"><button data-m="keep" class="main">Tap to Keep</button><button id="auto">Auto</button><button data-m="wand"><svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px;margin-right:4px"><path d="M4 20 L15 9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M17 2 l1 3 3 1 -3 1 -1 3 -1-3 -3-1 3-1z" fill="#e8c66a"/><circle cx="20" cy="12" r="1.2" fill="#e8c66a"/><circle cx="11" cy="4" r="1" fill="#e8c66a"/></svg>Wand</button><button data-m="erase">Eraser</button><button data-m="restore">Restore</button><button id="eu">Undo</button><button id="er">Reset</button><button id="ex">Cancel</button><button id="ed1" class="main">Done</button></div></div>
 <script>
@@ -38,13 +38,13 @@ S('<path d="M60 70 Q60 30 100 30 Q140 30 140 70" fill="none" stroke="#7a5230" st
 S('<circle cx="70" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><circle cx="135" cy="100" r="34" fill="#3b2f2f" opacity=".85"/><path d="M104 96 Q102 88 100 96" stroke="#c9a96e" stroke-width="5" fill="none"/><path d="M36 92 L15 80 M169 92 L188 80" stroke="#c9a96e" stroke-width="5"/>'),
 S('<path d="M100 40 Q60 40 60 90 Q60 150 100 175 Q140 150 140 90 Q140 40 100 40Z" fill="#e8c66a" stroke="#9a7a2e" stroke-width="4"/><circle cx="100" cy="95" r="18" fill="#7fb7a4"/>')];
 const c=document.getElementById('c'),x=c.getContext('2d');let items=[],sel=null,bg='#ffffff';
-function add(src,w=380){const im=new Image();im.onload=()=>{const r=im.height/im.width;items.push(sel={im,x:540,y:600,w,h:w*r,a:0});draw()};im.src=src}
+function add(src,w=380){const im=new Image();im.onload=()=>{const r=im.height/im.width;items.push(sel={im,x:540,y:600,w,h:w*r,a:0});draw();pre(sel)};im.src=src}
 const bar=document.getElementById('items');samples.forEach(s=>{const i=new Image();i.src=s;i.onclick=()=>add(s);bar.appendChild(i)});
-function draw(){const T=document.getElementById("tools");if(T){T.classList.toggle("off",!sel);document.getElementById("hint").style.visibility=sel?"hidden":"visible"}x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);for(const o of items){x.save();x.translate(o.x,o.y);x.rotate(o.a);x.drawImage(o.im,-o.w/2,-o.h/2,o.w,o.h);if(o===sel&&!x.noSel){x.strokeStyle='#c96f5b';x.lineWidth=4;x.setLineDash([14,10]);x.strokeRect(-o.w/2,-o.h/2,o.w,o.h)}x.restore()}}
+function draw(){const T=document.getElementById("tools");if(T){T.classList.toggle("off",!sel);document.getElementById("hint").style.visibility=sel?"hidden":"visible"}x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);for(const o of items){x.save();x.translate(o.x,o.y);x.rotate(o.a);x.drawImage(o.im,-o.w/2,-o.h/2,o.w,o.h);if(!x.noSel){x.beginPath();x.arc(o.w/2-14,-o.h/2+14,9,0,7);x.fillStyle=o.im._ready?'#5a9e6f':'#d9b26a';x.fill()}if(o===sel&&!x.noSel){x.strokeStyle='#c96f5b';x.lineWidth=4;x.setLineDash([14,10]);x.strokeRect(-o.w/2,-o.h/2,o.w,o.h)}x.restore()}}
 function pt(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
 function hit(p){for(let i=items.length-1;i>=0;i--){const o=items[i],dx=p.x-o.x,dy=p.y-o.y,cs=Math.cos(-o.a),sn=Math.sin(-o.a),lx=dx*cs-dy*sn,ly=dx*sn+dy*cs;if(Math.abs(lx)<o.w/2&&Math.abs(ly)<o.h/2)return o}return null}
 const ptrs=new Map();let g=null;
-c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,pt(e));if(ptrs.size==1){sel=hit(pt(e));draw()}start()};
+c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,pt(e));if(ptrs.size==1){sel=hit(pt(e));if(sel)pre(sel,5);draw()}start()};
 function start(){g=null;if(!sel||!ptrs.size)return;const p=[...ptrs.values()];if(p.length==1)g={p:p[0],x:sel.x,y:sel.y};else{const d=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y),an=Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x);g={d,an,w:sel.w,h:sel.h,a:sel.a}}}
 c.onpointermove=e=>{if(!ptrs.has(e.pointerId)||!sel||!g)return;ptrs.set(e.pointerId,pt(e));const p=[...ptrs.values()];if(p.length==1&&g.p){sel.x=g.x+p[0].x-g.p.x;sel.y=g.y+p[0].y-g.p.y}else if(p.length>1&&g.d){const s=Math.hypot(p[1].x-p[0].x,p[1].y-p[0].y)/g.d;sel.w=g.w*s;sel.h=g.h*s;sel.a=g.a+Math.atan2(p[1].y-p[0].y,p[1].x-p[0].x)-g.an}draw()};
 c.onpointerup=c.onpointercancel=e=>{ptrs.delete(e.pointerId);start()};
@@ -58,7 +58,7 @@ $('file').onchange=e=>{addUploads([...e.target.files]);e.target.value=''};
 $('save').onclick=()=>{x.noSel=1;draw();const a=document.createElement('a');a.download='style-board.png';a.href=c.toDataURL('image/png');a.click();x.noSel=0;draw()};
 function shrink(b){return new Promise(ok=>{const u=URL.createObjectURL(b),i=new Image();i.onload=()=>{const s=Math.min(1,1200/Math.max(i.width,i.height)),k=document.createElement('canvas');k.width=Math.round(i.width*s);k.height=Math.round(i.height*s);k.getContext('2d').drawImage(i,0,0,k.width,k.height);URL.revokeObjectURL(u);ok(k.toDataURL('image/jpeg',.9))};i.onerror=()=>ok(null);i.src=u})}
 let pending=[];function offer(){$('offer').hidden=!pending.length;$('offer').style.display=pending.length?'flex':'none'}
-async function addUploads(fs){let n=0,up=[];for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});(autoOn()?up:pending).push(sel);n++;draw();r()};im.src=d})}offer();if(up.length)enqueue(up);if(!n&&fs.length)msg("Couldn't read that photo.")}
+async function addUploads(fs){let n=0,up=[];for(const f of fs){const d=await shrink(f);if(!d)continue;await new Promise(r=>{const im=new Image();im.onload=()=>{const w=420;items.push(sel={im,x:540+n*40,y:600+n*40,w,h:w*im.height/im.width,a:0});(autoOn()?up:pending).push(sel);if(!autoOn())pre(sel);n++;draw();r()};im.src=d})}offer();if(up.length)enqueue(up);if(!n&&fs.length)msg("Couldn't read that photo.")}
 const msg=t=>$('msg').textContent=t;
 const PX=u=>'https://images.weserv.nl/?url='+encodeURIComponent(u.replace(/^https?:\/\//,''));
 function addUrl(u){return new Promise((ok,no)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{const w=380;items.push(sel={im,x:540,y:600,w,h:w*im.height/im.width,a:0});draw();if(autoOn())enqueue([sel]);ok()};im.onerror=no;im.src=PX(u)})}
@@ -84,7 +84,7 @@ $('ofy').onclick=async()=>{const l=pending;pending=[];offer();for(const o of l)a
 
 const ec=$('ec'),ex2=ec.getContext('2d',{willReadFrequently:true});let eo=null,orig=null,hist=[],mode='keep';
 $('mw').onclick=()=>{if(!sel)return msg('Tap an item first.');eo=sel;const im=eo.im;ec.width=im.naturalWidth;ec.height=im.naturalHeight;ex2.clearRect(0,0,ec.width,ec.height);ex2.drawImage(im,0,0);
- try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];km=null;emb=null;$('ed').hidden=false;$('ed').style.display='flex'};
+ try{orig=ex2.getImageData(0,0,ec.width,ec.height)}catch(e){return msg('This picture is locked by its website; add it via upload instead.')}hist=[];km=null;emb=null;pre(eo,9);$('ed').hidden=false;$('ed').style.display='flex'};
 document.querySelectorAll('#ed [data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#ed [data-m]').forEach(x=>x.className=x===b?'main':'')});
 const close=()=>{$('ed').hidden=true;$('ed').style.display='none'};
 function snap(){hist.push([ex2.getImageData(0,0,ec.width,ec.height),km&&km.slice()]);if(hist.length>20)hist.shift()}
@@ -105,21 +105,24 @@ function small(srcCanvasOrImg,w,h){const s=Math.min(1,SZ/Math.max(w,h)),k=docume
 function upMask(m,sw,sh,W,H){const k=document.createElement('canvas');k.width=sw;k.height=sh;const d=new ImageData(sw,sh);for(let i=0;i<m.length;i++){d.data[i*4+3]=m[i]}k.getContext('2d').putImageData(d,0,0);
  const b=document.createElement('canvas');b.width=W;b.height=H;const q=b.getContext('2d');q.imageSmoothingEnabled=true;q.drawImage(k,0,0,W,H);const a=q.getImageData(0,0,W,H).data,o=new Uint8Array(W*H);for(let i=0;i<o.length;i++)o[i]=a[i*4+3]>110?1:0;return o}
 function origCanvas(){tmp.width=ec.width;tmp.height=ec.height;tmp.getContext('2d').putImageData(orig,0,0);return tmp}
-async function samMask(x,y){const d=small(origCanvas(),ec.width,ec.height),s=d.width/ec.width;if(!eo.key)eo.key=Math.random();const m=await ask({type:'sam',key:eo.key,d,x:x*s,y:y*s});return upMask(m,d.width,d.height,ec.width,ec.height)}
-async function cutAlpha(){if(eo.cut&&eo.cut.length==ec.width*ec.height)return eo.cut;const d=small(origCanvas(),ec.width,ec.height);const m=await ask({type:'cut',d});return eo.cut=upMask(m,d.width,d.height,ec.width,ec.height)}
-async function autoCut(o){const w=o.im.naturalWidth,h=o.im.naturalHeight,d=small(o.im,w,h);const m=await ask({type:'cut',d});const full=upMask(m,d.width,d.height,w,h);
+async function samMask(x,y){const d=small(origCanvas(),ec.width,ec.height),s=d.width/ec.width;const m=await ask({type:'sam',p:10,key:kOf(eo.im),d,x:x*s,y:y*s});return upMask(m,d.width,d.height,ec.width,ec.height)}
+async function cutAlpha(){if(eo.cut&&eo.cut.length==ec.width*ec.height)return eo.cut;const d=small(origCanvas(),ec.width,ec.height);const m=await ask({type:'cut',p:8,d});return eo.cut=upMask(m,d.width,d.height,ec.width,ec.height)}
+async function autoCut(o){if(o===eo&&!$('ed').hidden)return;const w=o.im.naturalWidth,h=o.im.naturalHeight,d=small(o.im,w,h);const m=await ask({type:'cut',p:2,d});if(o===eo&&!$('ed').hidden)return;const full=upMask(m,d.width,d.height,w,h);
  const k=document.createElement('canvas');k.width=w;k.height=h;const q=k.getContext('2d');q.drawImage(o.im,0,0);const id=q.getImageData(0,0,w,h);o.orig=o.orig||o.im;
- for(let i=0;i<full.length;i++)if(!full[i])id.data[i*4+3]=0;q.putImageData(id,0,0);o.im=await toImg(k.toDataURL('image/png'));draw()}
+ for(let i=0;i<full.length;i++)if(!full[i])id.data[i*4+3]=0;q.putImageData(id,0,0);o.im=await toImg(k.toDataURL('image/png'));draw();pre(o)}
 let queue=[],qrun=false,qdone=0,qtot=0;function qmsg(){$('qp').textContent=qrun?`Cutting out ${qdone+1} of ${qtot}...`:''}
 async function enqueue(list){queue.push(...list);qtot+=list.length;if(qrun)return;qrun=true;while(queue.length){qmsg();const o=queue.shift();try{await autoCut(o)}catch(e){console.warn(e);o.im=await toImg(whiteOut(o.im));draw()}qdone++}qrun=false;qdone=qtot=0;qmsg()}
-if(localStorage.ac==='false')$('ac').checked=false;const autoOn=()=>$('ac').checked;
+if(localStorage.ac==='false')$('ac').checked=false;let kc=0;const kOf=im=>im._k||(im._k='k'+(++kc));
+function pre(o,p=1){const im=o.im,k=kOf(im);if(im._ready){return Promise.resolve()}if(im._pend){if(p>1)wk().postMessage({type:'prio',key:k,p});return im._pend}
+ const d=small(im,im.naturalWidth,im.naturalHeight);im._pend=ask({type:'embed',p,key:k,d}).then(()=>{im._ready=1;draw()}).catch(e=>console.warn(e));return im._pend}
+const autoOn=()=>$('ac').checked;
 function warm(){const st=$('ready');st.textContent='Getting the cutout tool ready...';const t=performance.now();ask({type:'warm'}).then(()=>{st.textContent='Ready';window.warmMs=performance.now()-t}).catch(e=>{console.warn(e);st.textContent='Cutout tool offline'})}
 (window.requestIdleCallback||setTimeout)(warm,{timeout:1500});
 function comp(src,sx,sy){const W=ec.width,H=ec.height,m=new Uint8Array(W*H),s0=sy*W+sx;if(!src[s0])return null;const st=[s0];m[s0]=1;while(st.length){const p=st.pop(),x=p%W;for(const q of[x>0?p-1:-1,x<W-1?p+1:-1,p-W,p+W])if(q>=0&&q<W*H&&!m[q]&&src[q]){m[q]=1;st.push(q)}}return m}
 function colorKeep(sx,sy){const W=ec.width,H=ec.height,a=orig.data,t=+$('tol').value*1.5,i0=(sy*W+sx)*4,ok=new Uint8Array(W*H);for(let p=0;p<W*H;p++){const j=p*4;ok[p]=Math.abs(a[j]-a[i0])+Math.abs(a[j+1]-a[i0+1])+Math.abs(a[j+2]-a[i0+2])<=t?1:0}return comp(ok,sx,sy)}
 function largest(src){const W=ec.width,seen=new Uint8Array(src.length);let best=null,bn=0;for(let p=0;p<src.length;p++)if(src[p]&&!seen[p]){const m=comp(src,p%W,(p/W)|0);let n=0;for(let i=0;i<m.length;i++)if(m[i]){seen[i]=1;n++}if(n>bn){bn=n;best=m}}return best}
 function applyKeep(){const W=ec.width,H=ec.height,d=new ImageData(new Uint8ClampedArray(orig.data),W,H),a=d.data;for(let p=0;p<W*H;p++){if(!km[p])a[p*4+3]=0;else{const x=p%W;if((x>0&&!km[p-1])||(x<W-1&&!km[p+1])||!km[p-W]||!km[p+W])a[p*4+3]>>=1}}ex2.putImageData(d,0,0)}
-async function keepAt(x,y){snap();stat(true);let m=null,how='';
+async function keepAt(x,y){snap();const base=km&&km.slice();let m=null,how='';if(!eo.im._ready){const f=colorKeep(x,y);if(f){km=base?base.map((v,i)=>v|f[i]):f;applyKeep();$('emsg').textContent='Quick preview... refining'}}stat(true);km=base;
  try{m=await samMask(x,y);how='Smart pick'}catch(e){console.warn('sam',e)}
  if(!m||!m.some(v=>v)){try{m=comp(await cutAlpha(),x,y);how='Cutout'}catch(e){console.warn('cut',e)}}
  if(!m){m=colorKeep(x,y);how='Color match'}

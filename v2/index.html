@@ -126,7 +126,7 @@ ec.onpointermove=e=>{if(brushing)brush(ep(e))};ec.onpointerup=ec.onpointercancel
 $('eu').onclick=()=>{const s=hist.pop();if(s){ex2.putImageData(s[0],0,0);km=s[1]}};$('er').onclick=()=>{snap();km=null;ex2.putImageData(orig,0,0)};$('ex').onclick=close;
 $('ed1').onclick=async()=>{eo.im=await toImg(ec.toDataURL('image/png'));close();draw()};
 let dp;addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;$('inst').hidden=false});$('inst').onclick=()=>{dp&&dp.prompt()};
-if('serviceWorker'in navigator){navigator.serviceWorker.register('../sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!rl&&!location.search){rl=1;location.reload()}})}
+if('serviceWorker'in navigator){navigator.serviceWorker.register('../sw.js',{updateViaCache:'none'}).then(r=>r.update());let rl=0,had=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!rl&&!location.search){rl=1;location.reload()}})}
 (async()=>{const q=new URLSearchParams(location.search);if(!q.has('shared'))return;history.replaceState(0,'','./');const n=+q.get('shared');
  if(n){const c=await caches.open('sb-share');for(let i=0;i<n;i++){const r=await c.match('shared-'+i);if(r)addBlob(await r.blob());await c.delete('shared-'+i)}}
  else{const t=(q.get('url')||'')+' '+(q.get('text')||'');if(t.trim())addLink(t)}})();
